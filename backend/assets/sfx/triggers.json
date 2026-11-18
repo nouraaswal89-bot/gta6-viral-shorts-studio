@@ -1,0 +1,30 @@
+{
+  "version": "1.0.0",
+  "sfx": {
+    "vine_boom.mp3": {
+      "file": "vine_boom.mp3",
+      "gain_db": -2.0,
+      "description": "Heavy sub-bass thud for sudden punchlines and meme zoom-ins"
+    },
+    "whoosh.mp3": {
+      "file": "whoosh.mp3",
+      "gain_db": -4.0,
+      "description": "High-velocity cinematic riser/swipe for speed ramps and scene transitions"
+    },
+    "bruh.mp3": {
+      "file": "bruh.mp3",
+      "gain_db": -2.5,
+      "description": "Comedic deadpan drop for streamer fails and zoom freeze-frames"
+    },
+    "wasted_hit.mp3": {
+      "file": "wasted_hit.mp3",
+      "gain_db": -1.5,
+      "description": "Deep metallic sub-impact for GTA Wasted slow-motion freeze overlay"
+    },
+    "bass_drop.mp3": {
+      "file": "bass_drop.mp3",
+      "gain_db": -3.0,
+      "description": "Phonk 808 sub-drop accent synchronized with beat drop flashes"
+    }
+  }
+}

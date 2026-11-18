@@ -1,0 +1,29 @@
+{
+  "version": "1.0.0",
+  "tracks": [
+    {
+      "id": "vice_phonk_130",
+      "title": "Vice City Drift Phonk (130 BPM)",
+      "artist": "GTA6 Studio Royalty-Free",
+      "emotion": "hype_phonk",
+      "bpm": 130.0,
+      "file": "vice_phonk_130bpm.mp3"
+    },
+    {
+      "id": "sunset_cinematic_96",
+      "title": "Leonida Neon Sunset (96 BPM)",
+      "artist": "GTA6 Studio Royalty-Free",
+      "emotion": "epic_cinematic",
+      "bpm": 96.0,
+      "file": "sunset_cinematic_96bpm.mp3"
+    },
+    {
+      "id": "chaotic_meme_128",
+      "title": "Five-Star Chaos Bounce (128 BPM)",
+      "artist": "GTA6 Studio Royalty-Free",
+      "emotion": "funny_meme",
+      "bpm": 128.0,
+      "file": "chaotic_meme_128bpm.mp3"
+    }
+  ]
+}

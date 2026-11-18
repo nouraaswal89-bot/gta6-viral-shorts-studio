@@ -1,0 +1,65 @@
+{
+  "version": "1.0.0",
+  "memes": [
+    {
+      "id": "gta_wasted_overlay",
+      "type": "gta_wasted_overlay",
+      "label": "WASTED",
+      "keywords": ["died", "wasted", "crash", "exploded", "fail", "dead", "busted", "wreck"],
+      "default_sfx": "wasted_hit.mp3",
+      "freeze_frame": true,
+      "default_duration": 2.1,
+      "intensity": 1.0
+    },
+    {
+      "id": "vine_boom_shockwave",
+      "type": "vine_boom_shockwave",
+      "label": "VINE BOOM",
+      "keywords": ["bro", "wait", "what", "no way", "crazy", "insane", "bruh", "yo"],
+      "default_sfx": "vine_boom.mp3",
+      "freeze_frame": false,
+      "default_duration": 0.9,
+      "intensity": 0.95
+    },
+    {
+      "id": "zoom_freeze_frame",
+      "type": "zoom_freeze_frame",
+      "label": "RECORD SCRATCH FREEZE",
+      "keywords": ["regret", "oops", "mistake", "uh oh", "caught", "stare", "reaction"],
+      "default_sfx": "bruh.mp3",
+      "freeze_frame": true,
+      "default_duration": 1.35,
+      "intensity": 0.9
+    },
+    {
+      "id": "skull_reaction",
+      "type": "skull_reaction",
+      "label": "SKULL REACTION",
+      "keywords": ["dead", "lol", "lmao", "cooked", "nah", "ain't no way", "wild"],
+      "default_sfx": "vine_boom.mp3",
+      "freeze_frame": false,
+      "default_duration": 1.2,
+      "intensity": 0.85
+    },
+    {
+      "id": "police_siren_flash",
+      "type": "police_siren_flash",
+      "label": "5-STAR WANTED",
+      "keywords": ["police", "cops", "wanted", "chase", "sirens", "swat", "busted", "run"],
+      "default_sfx": "whoosh.mp3",
+      "freeze_frame": false,
+      "default_duration": 1.8,
+      "intensity": 0.92
+    },
+    {
+      "id": "mission_passed",
+      "type": "mission_passed",
+      "label": "MISSION PASSED +RESPECT",
+      "keywords": ["clutched", "escaped", "win", "clean", "stunt", "landed", "legend"],
+      "default_sfx": "whoosh.mp3",
+      "freeze_frame": false,
+      "default_duration": 2.2,
+      "intensity": 0.9
+    }
+  ]
+}
