@@ -121,8 +121,8 @@ class ShortClipData(BaseModel):
     preset: StylePreset
     source_start: float
     source_end: float
-    duration: float = Field(ge=15.0, le=30.0)
-    fps: int = 60
+    duration: float = Field(ge=5.0, le=30.0)
+    fps: int = 30
     width: int = 1080
     height: int = 1920
     video_url: str

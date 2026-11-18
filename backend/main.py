@@ -123,6 +123,13 @@ class JobRegistry:
     def get(self, job_id: str) -> JobState:
         job = self.jobs.get(job_id)
         if not job:
+            # Recover job state from disk if server restarted / slept on Railway
+            state_file = WORKSPACE_DIR / job_id / "job_state.json"
+            if state_file.exists():
+                job = JobState.model_validate_json(state_file.read_text(encoding="utf-8"))
+                self.jobs[job_id] = job
+                self.sockets.setdefault(job_id, set())
+                return job
             raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found.")
         return job
 
@@ -414,7 +421,7 @@ async def _run_demo_pipeline(job_id: str, req: CreateJobRequest, base_url: str) 
                 source_start=float(idx * 25),
                 source_end=float(idx * 25 + clip_duration),
                 duration=clip_duration,
-                fps=60,
+                fps=int(os.getenv("OUTPUT_FPS", "30")),
                 width=1080,
                 height=1920,
                 video_url=f"{base_url}/workspace/{job_id}/{clip_id}/{enhanced_video.name}",
@@ -423,7 +430,7 @@ async def _run_demo_pipeline(job_id: str, req: CreateJobRequest, base_url: str) 
                 bgm_title=track.title,
                 bpm=bpm,
                 render_status="rendering",
-                facecam=FacecamBox(detected=req.enable_facecam_pip, corner="top_right"),
+                facecam=FacecamBox(detected=False, corner="top_right"),
                 captions=captions,
                 annotations=sc["notes"],
                 beats=beats,
@@ -476,7 +483,14 @@ async def _run_pipeline_from_ingest(
             await registry.update_stage(job_id, PipelineStageId.INGEST, StageStatus.RUNNING, pct, msg)
             await registry.log(job_id, "ingest", msg)
 
-        ingest_res = await ingest_stream(req.url, job_dir / "source", progress_cb=_ingest_cb)
+        if local_upload_path is not None:
+            ingest_res = await ingest_local_video(
+                local_upload_path, job_dir / "source", local_title, progress_cb=_ingest_cb
+            )
+        else:
+            ingest_res = await ingest_stream(
+                req.url, job_dir / "source", num_shorts=req.num_shorts, progress_cb=_ingest_cb
+            )
         job.stream_metadata = ingest_res.metadata
         await registry.update_stage(job_id, PipelineStageId.INGEST, StageStatus.COMPLETED, 100.0, f"{len(ingest_res.peaks)} peaks")
 
@@ -526,8 +540,8 @@ async def _run_pipeline_from_ingest(
             )
         await registry.update_stage(job_id, PipelineStageId.BEATS_CAPTIONS, StageStatus.COMPLETED, 100.0, "Done")
 
-        # STAGE 5: Download ONLY the selected 15-30s segments in 1080p60 + 8K CAS/HDR Enhance (~6-10s/clip, parallel!)
-        await registry.update_stage(job_id, PipelineStageId.ENHANCE_FX, StageStatus.RUNNING, 10.0, "Downloading 1080p clips & grading...")
+        # STAGE 5: Local FFmpeg 8K CAS/HDR + Sidechain Audio Ducking (~4-8s per clip, parallel!)
+        await registry.update_stage(job_id, PipelineStageId.ENHANCE_FX, StageStatus.RUNNING, 15.0, "Grading...")
         sem = asyncio.Semaphore(2)
         completed_count = 0
 
@@ -542,29 +556,11 @@ async def _run_pipeline_from_ingest(
                 beats = [b for b in all_beats if b.time <= bp["duration"] - 0.15]
                 captions = clip_captions[idx]
 
-                abs_start = ingest_res.window_offset + bp["start_sec"]
-                abs_end = abs_start + bp["duration"]
-
-                await registry.log(job_id, "enhance_fx", f"Downloading clip #{idx + 1} ({abs_start:.0f}s–{abs_end:.0f}s) @ 1080p60...")
-                raw_clip_path = await download_clip_segment_1080p(
-                    url=ingest_res.url,
-                    abs_start=abs_start,
-                    abs_end=abs_end,
-                    output_path=clip_dir / "source_clip_1080p.mp4",
-                    is_live=ingest_res.metadata.is_live,
-                )
-
-                facecam = (
-                    await asyncio.to_thread(detect_facecam_fast, raw_clip_path)
-                    if req.enable_facecam_pip
-                    else FacecamBox(detected=False)
-                )
-
                 enhanced_video, audio_mix = await enhance_clip_8k_hdr(
-                    source_video=raw_clip_path,
+                    source_video=ingest_res.video_path,
                     bgm_path=Path(track.local_path),
                     clip_dir=clip_dir,
-                    start_sec=0.0,
+                    start_sec=bp["start_sec"],
                     duration=bp["duration"],
                     preset=req.preset,
                     beats=beats,
@@ -579,6 +575,7 @@ async def _run_pipeline_from_ingest(
                     f"Graded {completed_count}/{len(blueprints)}",
                 )
 
+                facecam = ingest_res.facecam if req.enable_facecam_pip else FacecamBox(detected=False)
                 clip_data = ShortClipData(
                     clip_id=clip_id,
                     index=idx + 1,
@@ -588,10 +585,10 @@ async def _run_pipeline_from_ingest(
                     viral_reason=bp["viral_reason"],
                     emotion=bp["emotion"],
                     preset=req.preset,
-                    source_start=round(abs_start, 2),
-                    source_end=round(abs_end, 2),
+                    source_start=bp["start_sec"],
+                    source_end=bp["end_sec"],
                     duration=bp["duration"],
-                    fps=60,
+                    fps=int(os.getenv("OUTPUT_FPS", "30")),
                     width=1080,
                     height=1920,
                     video_url=f"{base_url}/workspace/{job_id}/{clip_id}/{enhanced_video.name}",
@@ -744,7 +741,7 @@ async def api_download_clip(job_id: str, clip_id: str) -> FileResponse:
 
     clip_dir = WORKSPACE_DIR / job_id / clip_id
     mp4_candidates = sorted(clip_dir.glob("gta6_short_*.mp4"))
-    target = mp4_candidates[0] if mp4_candidates else clip_dir / "enhanced_9x16_60fps.mp4"
+    target = mp4_candidates[0] if mp4_candidates else clip_dir / "enhanced_9x16_hdr.mp4"
     if not target.exists():
         raise HTTPException(status_code=404, detail="Rendered MP4 not found.")
 

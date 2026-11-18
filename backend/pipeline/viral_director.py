@@ -364,31 +364,35 @@ def _clamp_and_enrich_clips(
         end_s = float(clip.end_sec)
         dur = end_s - start_s
 
-        if dur < 15.0:
+        if video_duration < 15.0:
+            start_s = 0.0
+            end_s = max(5.0, video_duration)
+        elif dur < 15.0:
             end_s = min(max(video_duration, start_s + 15.0), start_s + 18.0)
             if end_s - start_s < 15.0:
                 start_s = max(0.0, end_s - 15.0)
         elif dur > 30.0:
             end_s = start_s + 26.0
 
-        dur = round(max(15.0, min(30.0, end_s - start_s)), 2)
+        dur = round(max(5.0, min(30.0, end_s - start_s)), 2)
         end_s = round(start_s + dur, 2)
 
-        annotations = [
-            NarrativeAnnotation(
-                text=ann.text.strip().upper() if ann.text.strip().startswith("*") else f"*{ann.text.strip().upper()}*",
-                start=round(max(0.4, min(dur - 1.5, float(ann.relative_start))), 2),
-                end=round(max(1.4, min(dur - 0.2, float(ann.relative_end))), 2),
-                position=ann.position,
+        annotations: list[NarrativeAnnotation] = []
+        for ann in clip.annotations[:3]:
+            a_start = round(max(0.4, min(dur - 1.4, float(ann.relative_start))), 2)
+            a_end = round(max(a_start + 0.9, min(dur - 0.15, float(ann.relative_end))), 2)
+            txt = ann.text.strip().upper()
+            if not txt.startswith("*"):
+                txt = f"*{txt}*"
+            annotations.append(
+                NarrativeAnnotation(text=txt, start=a_start, end=a_end, position=ann.position)
             )
-            for ann in clip.annotations[:3]
-        ]
 
         memes: list[MemeCue] = []
         for m_idx, m in enumerate(clip.memes[:3]):
             spec = meme_catalog.get(m.type, {})
             sfx_name = spec.get("default_sfx", "vine_boom.mp3")
-            t = max(0.8, min(dur - 1.2, float(m.relative_time)))
+            t = max(0.6, min(dur - 1.0, float(m.relative_time)))
             memes.append(
                 MemeCue(
                     id=f"meme_{idx}_{m_idx}_{m.type}",
@@ -403,14 +407,17 @@ def _clamp_and_enrich_clips(
                 )
             )
 
-        ramps = [
-            SpeedRampSegment(
-                start=round(max(1.0, min(dur - 2.5, float(r.relative_start))), 2),
-                end=round(max(2.0, min(dur - 0.5, float(r.relative_end))), 2),
-                speed=round(max(0.35, min(0.85, float(r.speed))), 2),
+        ramps: list[SpeedRampSegment] = []
+        for r in clip.speed_ramps[:1]:
+            r_start = round(max(1.0, min(dur - 2.0, float(r.relative_start))), 2)
+            r_end = round(max(r_start + 0.7, min(dur - 0.4, float(r.relative_end))), 2)
+            ramps.append(
+                SpeedRampSegment(
+                    start=r_start,
+                    end=r_end,
+                    speed=round(max(0.35, min(0.85, float(r.speed))), 2),
+                )
             )
-            for r in clip.speed_ramps[:1]
-        ]
 
         enriched.append({
             "index": idx + 1,

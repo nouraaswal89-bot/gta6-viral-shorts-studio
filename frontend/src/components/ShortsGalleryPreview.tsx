@@ -36,8 +36,8 @@ export const ShortsGalleryPreview: React.FC<ShortsGalleryPreviewProps> = ({
   if (!activeClip) return null;
 
   const durationInFrames = Math.max(
-    900,
-    Math.round((activeClip.duration || 18) * (activeClip.fps || 60))
+    60,
+    Math.round((activeClip.duration || 18) * (activeClip.fps || 30))
   );
   const dropCount = activeClip.beats.filter((b) => b.is_drop).length;
 
@@ -51,7 +51,7 @@ export const ShortsGalleryPreview: React.FC<ShortsGalleryPreviewProps> = ({
             {job.clips.length} {job.clips.length === 1 ? "Short" : "Shorts"} Ready
           </span>
           <span className="font-mono text-xs text-slate-400">
-            1080×1920 • 60fps
+            1080×1920 • {activeClip.fps || 30}fps
           </span>
         </div>
 
